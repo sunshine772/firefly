@@ -1,0 +1,1004 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="operaciones"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_op"
+        [columns]="cols"
+        rowExpandMode="single"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de operaciones</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template
+          pTemplate="body"
+          let-operacion
+          let-rowData
+          let-rowIndex="rowIndex"
+          let-expanded="expanded"
+        >
+          <tr>
+            <td>
+              <button
+                pButton
+                pRipple
+                [pRowToggler]="operacion"
+                class="p-button-text p-button-rounded p-button-plain"
+                [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                (click)="listarActividades(operacion.id_op)"
+              ></button>
+            </td>
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">{{ operacion.objetivo }}</td>
+            <td class="text-center">
+              {{
+                operacion.fecha | aprobada : operacion.desde : operacion.hasta
+              }}
+            </td>
+            <td class="text-center">{{ operacion.lugares.nombre }}</td>
+            <td class="text-center">
+              <p-tag
+                [value]="operacion.estado ? 'Habilitado' : 'Deshabilitado'"
+                [severity]="operacion.estado ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(operacion)"
+              ></button>
+              <button
+                *ngIf="operacion.estado"
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-danger mx-1"
+                (click)="modalDeshabilitar(operacion)"
+              ></button>
+              <button
+                *ngIf="!operacion.estado"
+                pButton
+                pRipple
+                icon="pi pi-replay"
+                class="p-button-secondary mx-1"
+                (click)="modalHabilitar(operacion)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus-circle"
+                class="p-button-warning mx-1"
+                (click)="modalAsignarActividad(operacion)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="rowexpansion" let-actividad>
+          <tr>
+            <td [attr.colspan]="cols.length">
+              <p-table
+                #dt
+                [value]="actividades"
+                responsiveLayout="scroll"
+                [rows]="5"
+                [globalFilterFields]="colsActividades"
+                [rowsPerPageOptions]="[5, 10, 15]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+                selectionMode="multiple"
+                [rowHover]="true"
+                dataKey="id_op"
+                [columns]="colsActividades"
+              >
+                <ng-template pTemplate="caption">
+                  <div
+                    class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+                  >
+                    <h5 class="m-0">Gestión de actividades</h5>
+                    <span class="block mt-2 md:mt-0 p-input-icon-left">
+                      <i class="pi pi-search"></i>
+                      <input
+                        pInputText
+                        type="text"
+                        placeholder="Buscar..."
+                        class="w-full sm:w-auto"
+                        (input)="onGlobalFilter(dt, $event)"
+                      />
+                    </span>
+                  </div>
+                </ng-template>
+                <ng-template pTemplate="header" let-columns>
+                  <tr>
+                    <ng-container *ngFor="let col of columns">
+                      <th class="text-center" [pSortableColumn]="col.field">
+                        <ng-container
+                          *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                        >
+                          {{ col.header }}
+                          <p-sortIcon [field]="col.field"></p-sortIcon>
+                        </ng-container>
+                        <ng-container
+                          *ngIf="col.field === 'n' || col.field === 'opciones'"
+                        >
+                          {{ col.header }}
+                        </ng-container>
+                      </th>
+                    </ng-container>
+                  </tr>
+                </ng-template>
+                <ng-template
+                  pTemplate="body"
+                  let-actividad
+                  let-rowIndex="rowIndex"
+                >
+                  <tr>
+                    <td class="text-center">{{ rowIndex + 1 }}</td>
+                    <td class="text-center">
+                      {{ actividad.empleados.personas.nombre }}
+                      {{ actividad.empleados.personas.ap }}
+                      {{ actividad.empleados.personas.am }}
+                    </td>
+                    <td class="text-center">{{ actividad.labor }}</td>
+                    <td class="text-center">{{ actividad.hprog }}</td>
+                    <td class="text-center">
+                      <p-tag
+                        [value]="
+                          actividad.estado ? 'Habilitado' : 'Deshabilitado'
+                        "
+                        [severity]="actividad.estado ? 'success' : 'danger'"
+                      ></p-tag>
+                    </td>
+                    <td class="text-center">
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-pencil"
+                        class="p-button-primary mx-1"
+                        (click)="modalModificarActividad(actividad)"
+                      ></button>
+                      <button
+                        *ngIf="actividad.estado"
+                        pButton
+                        pRipple
+                        icon="pi pi-trash"
+                        class="p-button-danger mx-1"
+                        (click)="modalDeshabilitarActividad(actividad)"
+                      ></button>
+                      <button
+                        *ngIf="!actividad.estado"
+                        pButton
+                        pRipple
+                        icon="pi pi-replay"
+                        class="p-button-secondary mx-1"
+                        (click)="modalHabilitarActividad(actividad)"
+                      ></button>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage" let-columns>
+                  <tr>
+                    <td
+                      [attr.colspan]="columns.length"
+                      class="text-center p-text-center p-p-4"
+                    >
+                      <i
+                        class="pi pi-exclamation-triangle p-mr-2"
+                        style="font-size: 1rem"
+                      ></i>
+                      No hay datos disponibles
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          formControlName="id_lug"
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          placeholder="Seleccionar el lugar"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('id_lug')?.invalid &&
+              (Add.get('id_lug')?.dirty || submittedAdd)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('id_lug')?.invalid &&
+            (Add.get('id_lug')?.dirty || submittedAdd)
+          "
+        >
+          El lugar es requerido.
+        </small>
+      </div>
+      <div class="field">
+        <label for="objetivo">Objetivo</label>
+        <input
+          type="text"
+          pInputText
+          id="objetivo"
+          formControlName="objetivo"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('objetivo')?.invalid &&
+              (Add.get('objetivo')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('objetivo')?.invalid &&
+            (Add.get('objetivo')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('objetivo')?.hasError('required')">
+            El objetivo es requerido.
+          </span>
+          <span *ngIf="Add.get('objetivo')?.hasError('minlength')">
+            El objetivo debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('objetivo')?.hasError('maxlength')">
+            El objetivo no debe tener más de 100 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="descripcion">Descripcion</label>
+        <textarea
+          rows="5"
+          cols="30"
+          pInputTextarea
+          formControlName="descripcion"
+          [autoResize]="true"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('descripcion')?.invalid &&
+              (Add.get('descripcion')?.dirty || submittedAdd)
+          }"
+        ></textarea>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('descripcion')?.invalid &&
+            (Add.get('descripcion')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('descripcion')?.hasError('minlength')">
+            La descripcion debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('descripcion')?.hasError('maxlength')">
+            La descripcion no debe tener más de 500 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="desde">Desde</label>
+        <p-calendar
+          formControlName="desde"
+          appendTo="body"
+          [timeOnly]="true"
+          [showTime]="true"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('desde')?.invalid &&
+              (Add.get('desde')?.dirty || submittedAdd)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('desde')?.invalid &&
+            (Add.get('desde')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('desde')?.hasError('required')">
+            El inicio de la operacion es requerida.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="hasta">Hasta</label>
+        <p-calendar
+          formControlName="hasta"
+          appendTo="body"
+          [timeOnly]="true"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('hasta')?.invalid &&
+              (Add.get('hasta')?.dirty || submittedAdd)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('hasta')?.invalid &&
+            (Add.get('hasta')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('hasta')?.hasError('required')">
+            El final de la operacion es requerida.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="fecha">Fecha</label>
+        <p-calendar
+          formControlName="fecha"
+          appendTo="body"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('fecha')?.invalid &&
+              (Add.get('fecha')?.dirty || submittedAdd)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('fecha')?.invalid &&
+            (Add.get('fecha')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('fecha')?.hasError('required')">
+            La fecha de la operacion es requerida.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          formControlName="id_lug"
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          placeholder="Seleccionar el lugar"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('id_lug')?.invalid &&
+              (Mod.get('id_lug')?.dirty || submittedMod)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_lug')?.invalid &&
+            (Mod.get('id_lug')?.dirty || submittedMod)
+          "
+        >
+          El lugar es requerido.
+        </small>
+      </div>
+      <div class="field">
+        <label for="objetivo">Objetivo</label>
+        <input
+          type="text"
+          pInputText
+          id="objetivo"
+          formControlName="objetivo"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('objetivo')?.invalid &&
+              (Mod.get('objetivo')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('objetivo')?.invalid &&
+            (Mod.get('objetivo')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('objetivo')?.hasError('required')">
+            El objetivo es requerido.
+          </span>
+          <span *ngIf="Mod.get('objetivo')?.hasError('minlength')">
+            El objetivo debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('objetivo')?.hasError('maxlength')">
+            El objetivo no debe tener más de 100 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="descripcion">Descripcion</label>
+        <textarea
+          rows="5"
+          cols="30"
+          pInputTextarea
+          formControlName="descripcion"
+          [autoResize]="true"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('descripcion')?.invalid &&
+              (Mod.get('descripcion')?.dirty || submittedMod)
+          }"
+        ></textarea>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('descripcion')?.invalid &&
+            (Mod.get('descripcion')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('descripcion')?.hasError('minlength')">
+            La descripcion debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('descripcion')?.hasError('maxlength')">
+            La descripcion no debe tener más de 500 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="desde">Desde</label>
+        <p-calendar
+          formControlName="desde"
+          appendTo="body"
+          [timeOnly]="true"
+          [showTime]="true"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('desde')?.invalid &&
+              (Mod.get('desde')?.dirty || submittedMod)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('desde')?.invalid &&
+            (Mod.get('desde')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('desde')?.hasError('required')">
+            El inicio de la operacion es requerida.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="hasta">Hasta</label>
+        <p-calendar
+          formControlName="hasta"
+          appendTo="body"
+          [timeOnly]="true"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('hasta')?.invalid &&
+              (Mod.get('hasta')?.dirty || submittedMod)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('hasta')?.invalid &&
+            (Mod.get('hasta')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('hasta')?.hasError('required')">
+            El final de la operacion es requerida.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="fecha">Fecha</label>
+        <p-calendar
+          formControlName="fecha"
+          appendTo="body"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('fecha')?.invalid &&
+              (Mod.get('fecha')?.dirty || submittedMod)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('fecha')?.invalid &&
+            (Mod.get('fecha')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('fecha')?.hasError('required')">
+            La fecha de la operacion es requerida.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisable"
+  [style]="{ width: '450px' }"
+  header="Deshabilitar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <p>¿Está seguro de deshabilitar la operación?</p>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="No"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Sí"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnable"
+  [style]="{ width: '450px' }"
+  header="Habilitar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <p>¿Está seguro de habilitar la operación?</p>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="No"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Sí"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Adicionar actividades -->
+<p-dialog
+  [(visible)]="modalAddA"
+  header="Adicionar actividades"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="AddA">
+      <div class="field">
+        <label for="">Empleados</label>
+        <p-autoComplete
+          (completeMethod)="buscarEmpleados($event)"
+          formControlName="empleado"
+          [suggestions]="filteredEmpleados"
+          field="fullname"
+          appendTo="body"
+          placeholder="Buscar..."
+          [type]="'search'"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              AddA.get('empleado')?.invalid &&
+              (AddA.get('empleado')?.dirty || submittedAddA)
+          }"
+        ></p-autoComplete>
+        <small
+          class="p-error"
+          *ngIf="
+            AddA.get('empleado')?.invalid &&
+            (AddA.get('empleado')?.dirty || submittedAddA)
+          "
+        >
+          <span *ngIf="AddA.get('empleado')?.hasError('required')">
+            El empleado es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="labor">Labor</label>
+        <input
+          type="text"
+          pInputText
+          id="labor"
+          formControlName="labor"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              AddA.get('labor')?.invalid &&
+              (AddA.get('labor')?.dirty || submittedAddA)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            AddA.get('labor')?.invalid &&
+            (AddA.get('labor')?.dirty || submittedAddA)
+          "
+        >
+          <span *ngIf="AddA.get('labor')?.hasError('required')">
+            El labor es requerido.
+          </span>
+          <span *ngIf="AddA.get('labor')?.hasError('minlength')">
+            El labor debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="AddA.get('labor')?.hasError('maxlength')">
+            El labor no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="hprog">Hora programada</label>
+        <p-calendar
+          formControlName="hprog"
+          appendTo="body"
+          [timeOnly]="true"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              AddA.get('hprog')?.invalid &&
+              (AddA.get('hprog')?.dirty || submittedAddA)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            AddA.get('hprog')?.invalid &&
+            (AddA.get('hprog')?.dirty || submittedAddA)
+          "
+        >
+          <span *ngIf="AddA.get('hprog')?.hasError('required')">
+            La hora programada es requerida.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="adicionarActividad()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modificar actividades -->
+<p-dialog
+  [(visible)]="modalModA"
+  header="Modificar actividades"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="ModA">
+      <div class="field">
+        <label for="">Empleados</label>
+        <p-autoComplete
+          (completeMethod)="buscarEmpleados($event)"
+          formControlName="empleado"
+          [suggestions]="filteredEmpleados"
+          field="fullname"
+          appendTo="body"
+          placeholder="Buscar..."
+          [type]="'search'"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              ModA.get('empleado')?.invalid &&
+              (ModA.get('empleado')?.dirty || submittedModA)
+          }"
+        ></p-autoComplete>
+        <small
+          class="p-error"
+          *ngIf="
+            ModA.get('empleado')?.invalid &&
+            (ModA.get('empleado')?.dirty || submittedModA)
+          "
+        >
+          <span *ngIf="ModA.get('empleado')?.hasError('required')">
+            El empleado es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="labor">Labor</label>
+        <input
+          type="text"
+          pInputText
+          id="labor"
+          formControlName="labor"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              ModA.get('labor')?.invalid &&
+              (ModA.get('labor')?.dirty || submittedModA)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            ModA.get('labor')?.invalid &&
+            (ModA.get('labor')?.dirty || submittedModA)
+          "
+        >
+          <span *ngIf="ModA.get('labor')?.hasError('required')">
+            El labor es requerido.
+          </span>
+          <span *ngIf="ModA.get('labor')?.hasError('minlength')">
+            El labor debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="ModA.get('labor')?.hasError('maxlength')">
+            El labor no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="hprog">Hora programada</label>
+        <p-calendar
+          formControlName="hprog"
+          appendTo="body"
+          [timeOnly]="true"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              ModA.get('hprog')?.invalid &&
+              (ModA.get('hprog')?.dirty || submittedModA)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            ModA.get('hprog')?.invalid &&
+            (ModA.get('hprog')?.dirty || submittedModA)
+          "
+        >
+          <span *ngIf="ModA.get('hprog')?.hasError('required')">
+            La hora programada es requerida.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="modificarActividad()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisableA"
+  [style]="{ width: '450px' }"
+  header="Deshabilitar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <p>¿Está seguro de deshabilitar la actividad?</p>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="No"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Sí"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="deshabilitarActividad()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnableA"
+  [style]="{ width: '450px' }"
+  header="Habilitar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <p>¿Está seguro de habilitar la actividad?</p>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="No"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Sí"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="habilitarActividad()"
+    ></button>
+  </ng-template>
+</p-dialog>

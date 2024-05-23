@@ -1,0 +1,447 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="solicitudes"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_s"
+        [columns]="cols"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de solicitudes</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-solicitud let-rowIndex="rowIndex">
+          <tr [ngClass]="{ 'fila-desplegada': solicitud.expanded }">
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">
+              {{ solicitud.clientes.personas.nombre }}
+              {{ solicitud.clientes.personas.ap }}
+              {{ solicitud.clientes.personas.am }}
+            </td>
+            <td class="text-center">
+              {{ solicitud.fecha | solicitado : solicitud.hora }}
+            </td>
+            <td class="text-center">
+              <p-chip
+                [label]="transformRequestType(solicitud.tipo_s).translation"
+                [icon]="transformRequestType(solicitud.tipo_s).icon"
+              ></p-chip>
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="transformStatus(solicitud.estado_s).translation"
+                [severity]="transformStatus(solicitud.estado_s).color"
+              ></p-tag>
+            </td>
+
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(solicitud)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus-circle"
+                class="p-button-warning mx-1"
+                (click)="modalInspeccionar(solicitud)"
+              ></button>
+              <!-- <button
+                pButton
+                pRipple
+                icon="pi pi-check"
+                class="p-button-success mx-1"
+                (click)="modalAceptar(solicitud)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-times"
+                class="p-button-danger mx-1"
+                (click)="modalRechazar(solicitud)"
+              ></button> -->
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalMod"
+  header="Modificar solicitud"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label for="">Clientes</label>
+        <p-autoComplete
+          (completeMethod)="buscarClientes($event)"
+          formControlName="cliente"
+          [suggestions]="filteredClientes"
+          field="fullname"
+          appendTo="body"
+          placeholder="Buscar..."
+          [type]="'search'"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('cliente')?.invalid &&
+              (Mod.get('cliente')?.dirty || submittedMod)
+          }"
+        ></p-autoComplete>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('cliente')?.invalid &&
+            (Mod.get('cliente')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('cliente')?.hasError('required')">
+            El cliente es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Tipo de medidor</label>
+        <p-dropdown
+          formControlName="tipo_s"
+          [options]="tipo_solicitud"
+          optionLabel="nombre"
+          optionValue="tipo_s"
+          placeholder="Seleccionar tipo de solicitud"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('tipo_s')?.invalid &&
+              (Mod.get('tipo_s')?.dirty || submittedMod)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('tipo_s')?.invalid &&
+            (Mod.get('tipo_s')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('tipo_s')?.hasError('required')">
+            El tipo de solicitud es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Municipios</label>
+        <p-dropdown
+          formControlName="id_mu"
+          [options]="municipios"
+          optionLabel="nombre"
+          optionValue="id_mu"
+          emptyMessage="No se encontraron municipios"
+          (onChange)="seleccionarMunicipio($event.value)"
+          appendTo="body"
+          placeholder="Seleccionar municipio"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('id_mu')?.invalid &&
+              (Mod.get('id_mu')?.dirty || submittedMod)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_mu')?.invalid &&
+            (Mod.get('id_mu')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('id_mu')?.hasError('required')">
+            El municipio es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          emptyMessage="No se encontraron lugares"
+          (onChange)="seleccionarLugar($event.value)"
+          appendTo="body"
+          placeholder="Seleccionar lugar"
+        ></p-dropdown>
+      </div>
+      <div class="field">
+        <label for="map">Coordenadas</label>
+
+        <div class="map-container">
+          <!-- <div class="search-container">
+            <span class="p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <p-autoComplete
+                [suggestions]="filteredLugares"
+                (completeMethod)="buscarLugar($event)"
+                (onSelect)="seleccionarLugar($event)"
+                field="nombre"
+                placeholder="Buscar..."
+                class="p-inputtext-rounded"
+              ></p-autoComplete>
+            </span>
+          </div> -->
+          <div id="map"></div>
+          <div class="button-container">
+            <p-toggleButton
+              [onIcon]="'pi pi-times'"
+              [offIcon]="'pi pi-map'"
+              (click)="cambiarCapa()"
+            ></p-toggleButton>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_coor')?.invalid &&
+            (Mod.get('id_coor')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('id_coor')?.hasError('required')">
+            Las coordenadas son requeridas.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalInsp"
+  header="Inspeccionar solicitud"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Insp">
+      <div class="field">
+        <label>Inspectores</label>
+        <p-dropdown
+          [options]="inspectoresConNombreCompleto"
+          formControlName="id_insp"
+          optionLabel="nombreCompleto"
+          optionValue="id_insp"
+          emptyMessage="No se encontraron inspectores"
+          appendTo="body"
+          placeholder="Seleccionar inspector"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Insp.get('id_insp')?.invalid &&
+              (Insp.get('id_insp')?.dirty || submittedInsp)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Insp.get('id_insp')?.invalid &&
+            (Insp.get('id_insp')?.dirty || submittedInsp)
+          "
+        >
+          <span *ngIf="Insp.get('id_insp')?.hasError('required')">
+            El inspector es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="map">Ubicacion</label>
+
+        <div class="map-container">
+          <div id="map"></div>
+          <div class="button-container">
+            <p-toggleButton
+              [onIcon]="'pi pi-times'"
+              [offIcon]="'pi pi-map'"
+              (click)="cambiarCapa()"
+            ></p-toggleButton>
+          </div>
+        </div>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Rechazar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalRechazar()"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Aceptar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modalAceptar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalAcc"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas <b>ACEPTAR</b> la solicitud de
+      <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalAcc = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="aceptar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDec"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas <b>RECHAZAR</b> la solicitud de
+      <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDec = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="rechazar()"
+    ></button>
+  </ng-template>
+</p-dialog>

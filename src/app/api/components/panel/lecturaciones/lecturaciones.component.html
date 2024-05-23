@@ -1,0 +1,387 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="lecturaciones"
+        [(selection)]="selectedLecturaciones"
+        [selectionPageOnly]="true"
+        responsiveLayout="scroll"
+        [rows]="100"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[100, 150, 250]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_lec"
+        [columns]="cols"
+        [scrollable]="true"
+        scrollHeight="60vh"
+        rowGroupMode="subheader"
+        groupRowsBy="fecha"
+        editMode="row"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de lecturaciones</h5>
+
+            <div class="flex items-center mt-2 md:mt-0">
+              <span class="block p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input
+                  pInputText
+                  type="text"
+                  placeholder="Buscar..."
+                  class="w-full sm:w-auto"
+                  (input)="onGlobalFilter(dt, $event)"
+                />
+              </span>
+
+              <button
+                pButton
+                pRipple
+                label="Importar"
+                icon="pi pi-plus"
+                class="p-button-primary mx-4 inline.-block"
+                (click)="modalImportar()"
+              ></button>
+
+              <button
+                pButton
+                pRipple
+                label="Generar"
+                icon="pi pi-upload"
+                class="p-button-help"
+                [disabled]="
+                  !selectedLecturaciones || !selectedLecturaciones.length
+                "
+                (click)="modalGenerar()"
+              ></button>
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <th style="width: 4rem">
+              <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+            </th>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="groupheader" let-lecturacion>
+          <tr pRowGroupHeader>
+            <!-- <th style="width: 4rem">
+              <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+            </th> -->
+            <td colspan="11">
+              <span class="font-bold ml-2">{{
+                lecturacion.fecha | monthYear
+              }}</span>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="groupfooter" let-lecturacion>
+          <tr>
+            <td colspan="11" class="text-right font-bold pr-6">
+              Total lecturaciones:
+              {{ calculateTotal(lecturacion.fecha) }}
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template
+          pTemplate="body"
+          let-lecturacion
+          let-editing="editing"
+          let-rowIndex="rowIndex"
+        >
+          <tr [pEditableRow]="lecturacion" [formGroup]="Mod">
+            <td>
+              <ng-container *ngIf="isLecturacionAdicionada(lecturacion)">
+                <i class="pi pi-check-square" style="color: green"></i>
+              </ng-container>
+
+              <ng-container *ngIf="!isLecturacionAdicionada(lecturacion)">
+                <p-tableCheckbox [value]="lecturacion"></p-tableCheckbox>
+              </ng-container>
+            </td>
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">
+              {{ lecturacion.medidores.clientes.personas.nombre }}
+              {{ lecturacion.medidores.clientes.personas.ap }}
+              {{ lecturacion.medidores.clientes.personas.am }}
+            </td>
+            <td class="text-center">
+              {{ lecturacion.empleados.personas.nombre }}
+              {{ lecturacion.empleados.personas.ap }}
+              {{ lecturacion.empleados.personas.am }}
+            </td>
+            <td class="text-center">
+              <p-chip
+                [label]="
+                  transformRequestType(lecturacion.medidores.tipo_med)
+                    .translation
+                "
+                [icon]="
+                  transformRequestType(lecturacion.medidores.tipo_med).icon
+                "
+              ></p-chip>
+            </td>
+            <td class="text-center">
+              {{ lecturacion.rutas.nombre }}
+            </td>
+            <td class="text-center">
+              <p-cellEditor>
+                <ng-template pTemplate="input">
+                  <input
+                    pInputText
+                    type="number"
+                    formControlName="lectura_anterior"
+                  />
+                </ng-template>
+                <ng-template pTemplate="output">
+                  {{ lecturacion.lectura_anterior | kWh }}
+                </ng-template>
+              </p-cellEditor>
+            </td>
+            <td class="text-center">
+              <p-cellEditor>
+                <ng-template pTemplate="input">
+                  <input
+                    pInputText
+                    type="number"
+                    formControlName="lectura_actual"
+                  />
+                </ng-template>
+                <ng-template pTemplate="output">
+                  {{ lecturacion.lectura_actual | kWh }}
+                </ng-template>
+              </p-cellEditor>
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="getIrregularityInfo(lecturacion.irregularidad).label"
+                [severity]="
+                  getIrregularityInfo(lecturacion.irregularidad).severity
+                "
+              ></p-tag>
+            </td>
+            <td>
+              <div class="flex align-items-center justify-content-center gap-2">
+                <button
+                  *ngIf="!editing"
+                  pButton
+                  pRipple
+                  pInitEditableRow
+                  icon="pi pi-pencil"
+                  class="p-button-primary mx-1"
+                  (click)="onRowEditInit(lecturacion)"
+                  [disabled]="isLecturacionAdicionada(lecturacion)"
+                ></button>
+
+                <button
+                  *ngIf="editing"
+                  pButton
+                  pRipple
+                  type="button"
+                  pSaveEditableRow
+                  icon="pi pi-check"
+                  class="p-button-success mx-1"
+                  (click)="onRowEditSave()"
+                ></button>
+                <button
+                  *ngIf="editing"
+                  pButton
+                  pRipple
+                  type="button"
+                  pCancelEditableRow
+                  icon="pi pi-times"
+                  class="p-button-danger mx-1"
+                  (click)="onRowEditCancel(lecturacion, rowIndex)"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <!-- Agrega los campos adicionales según tus necesidades -->
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <!-- Agrega los campos adicionales según tus necesidades -->
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Importar lecturaciones"
+  [(visible)]="modalImport"
+  [responsive]="true"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="p-fluid">
+    <p-fileUpload
+      [customUpload]="true"
+      (uploadHandler)="handleUpload($event)"
+      [maxFileSize]="1000000"
+      [accept]="
+        'application/json,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      "
+      chooseLabel="Seleccionar archivo"
+      uploadLabel="Subir archivo"
+      cancelLabel="Cancelar"
+      [auto]="true"
+      [showUploadButton]="true"
+      [showCancelButton]="true"
+      [invalidFileSizeMessageSummary]="'Error'"
+      [invalidFileSizeMessageDetail]="
+        'El tamaño del archivo excede el límite permitido'
+      "
+      [invalidFileTypeMessageSummary]="'Error'"
+      [invalidFileTypeMessageDetail]="'Tipo de archivo no válido'"
+    ></p-fileUpload>
+  </div>
+
+  <p-footer>
+    <button
+      pButton
+      type="button"
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalImport = false"
+    ></button>
+    <button
+      pButton
+      type="button"
+      label="Subir archivo"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="importar()"
+    ></button>
+  </p-footer>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalGenerate"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span>¿Estás seguro de que desea generar el pre aviso?</span>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalGenerate = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="generar()"
+    ></button>
+  </ng-template>
+</p-dialog>

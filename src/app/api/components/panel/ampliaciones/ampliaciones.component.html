@@ -1,0 +1,380 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="ampliaciones"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_amp"
+        [columns]="cols"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de ampliaciones</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-ampliacion let-rowIndex="rowIndex">
+          <tr>
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">
+              {{ ampliacion.clientes.personas.nombre }}
+            </td>
+            <td class="text-center">
+              {{ ampliacion.clientes.personas.nombre }}
+            </td>
+            <td class="text-center">
+              {{ ampliacion.clientes.personas.nombre }}
+            </td>
+            <td class="text-center">
+              {{ ampliacion.clientes.personas.nombre }}
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="ampliacion.estado ? 'Habilitado' : 'Deshabilitado'"
+                [severity]="ampliacion.estado ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(ampliacion)"
+              ></button>
+              <button
+                *ngIf="ampliacion.estado"
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-danger mx-1"
+                (click)="modalDeshabilitar(ampliacion)"
+              ></button>
+              <button
+                *ngIf="!ampliacion.estado"
+                pButton
+                pRipple
+                icon="pi pi-replay"
+                class="p-button-secondary mx-1"
+                (click)="modalHabilitar(ampliacion)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label for="id">Clientes</label>
+        <p-autoComplete
+          placeholder="Buscar por CI"
+          [(ngModel)]="cliente"
+          [suggestions]="filteredClientes"
+          (completeMethod)="searchClientes($event)"
+          [field]="'nombreCompleto'"
+          formControlName="ci"
+          (onSelect)="selectCliente($event)"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('ci')?.invalid && (Add.get('ci')?.dirty || submittedAdd)
+          }"
+        ></p-autoComplete>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('ci')?.invalid && (Add.get('ci')?.dirty || submittedAdd)
+          "
+        >
+          El nombre es requerido.
+        </small>
+      </div>
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input
+          type="text"
+          pInputText
+          id="nombre"
+          formControlName="nombre"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('nombre')?.invalid &&
+              (Add.get('nombre')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('nombre')?.invalid &&
+            (Add.get('nombre')?.dirty || submittedAdd)
+          "
+        >
+          El nombre es requerido.
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input
+          type="text"
+          pInputText
+          id="nombre"
+          formControlName="nombre"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('nombre')?.invalid &&
+              (Mod.get('nombre')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('nombre')?.invalid &&
+            (Mod.get('nombre')?.dirty || submittedMod)
+          "
+        >
+          El nombre es requerido.
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnable"
+  header="Confirm"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span>Are you sure you want to delete selected products?</span>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisable"
+  header="Confirm"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span>Are you sure you want to delete <b></b>?</span>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalUpdate"
+  header="Actualizar fase"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <ng-template pTemplate="content">
+    <p-steps [model]="fasesModel" [(activeIndex)]="activeIndex"></p-steps>
+
+    <div class="p-fluid">
+      <ng-container *ngFor="let fase of fasesModel; let i = index">
+        <div *ngIf="activeIndex === i" class="field my-4">
+          <p-fileUpload
+            name="documento"
+            url="tu_url_de_guardado"
+            mode="basic"
+            [maxFileSize]="10000000"
+            chooseLabel="Seleccionar"
+            [showUploadButton]="false"
+            [showCancelButton]="false"
+            [customUpload]="true"
+            (uploadHandler)="onFileSelected($event, i)"
+          ></p-fileUpload>
+          <div *ngIf="hasDocument(i)">
+            <a [href]="getDocumentUrl(i)" label="Descargar documento"></a>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      *ngIf="showPreviousButton"
+      pButton
+      pRipple
+      class="p-button-text"
+      label="Anterior"
+      (click)="previousStep()"
+    ></button>
+    <button
+      *ngIf="showNextButton"
+      pButton
+      pRipple
+      class="p-button-text"
+      label="Siguiente"
+      (click)="nextStep()"
+    ></button>
+    <button
+      *ngIf="showFinishButton"
+      pButton
+      pRipple
+      class="p-button-text"
+      label="Finalizar"
+      (click)="nextStep()"
+    ></button>
+  </ng-template>
+</p-dialog>

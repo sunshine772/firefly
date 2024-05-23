@@ -1,0 +1,1291 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="clientes"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_cli"
+        [columns]="cols"
+        rowExpandMode="single"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de clientes</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template
+          pTemplate="body"
+          let-cliente
+          let-rowData
+          let-rowIndex="rowIndex"
+          let-expanded="expanded"
+        >
+          <tr>
+            <td>
+              <button
+                pButton
+                pRipple
+                [pRowToggler]="cliente"
+                class="p-button-text p-button-rounded p-button-plain"
+                [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                (click)="listarMedidores(cliente.id_cli)"
+              ></button>
+            </td>
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">
+              <p-image
+                *ngIf="cliente.personas.imagenes"
+                [src]="getImagenUrl(cliente.personas.imagenes.imagen)"
+                alt="Image"
+                width="50"
+                [preview]="true"
+              ></p-image>
+              <p-image
+                *ngIf="!cliente.personas.imagenes"
+                src="../../../../../assets/demo/images/avatar/imagen.png"
+                alt="Image"
+                width="50"
+                [preview]="true"
+              ></p-image>
+            </td>
+            <td class="text-center">{{ cliente.personas.ci }}</td>
+            <td class="text-center">{{ cliente.personas.nombre }}</td>
+            <td class="text-center">{{ cliente.personas.ap }}</td>
+            <td class="text-center">{{ cliente.personas.am }}</td>
+            <td class="text-center">
+              <p-tag
+                [value]="
+                  cliente.personas.estado ? 'Habilitado' : 'Deshabilitado'
+                "
+                [severity]="cliente.personas.estado ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(cliente)"
+              ></button>
+              <button
+                *ngIf="cliente.personas.estado"
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-danger mx-1"
+                (click)="modalDeshabilitar(cliente)"
+              ></button>
+              <button
+                *ngIf="!cliente.personas.estado"
+                pButton
+                pRipple
+                icon="pi pi-replay"
+                class="p-button-secondary mx-1"
+                (click)="modalHabilitar(cliente)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus-circle"
+                class="p-button-warning mx-1"
+                (click)="modalAdicionarMedidor(cliente)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="rowexpansion" let-medidor>
+          <tr>
+            <td [attr.colspan]="cols.length">
+              <p-table
+                #dt
+                [value]="medidores"
+                responsiveLayout="scroll"
+                [rows]="5"
+                [globalFilterFields]="colsMedidores"
+                [rowsPerPageOptions]="[5, 10, 15]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+                selectionMode="multiple"
+                [rowHover]="true"
+                dataKey="id_p"
+                [columns]="colsMedidores"
+              >
+                <!-- <ng-template pTemplate="caption">
+                  <div
+                    class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+                  >
+                    <h5 class="m-0">Gestión de medidores</h5>
+                    <span class="block mt-2 md:mt-0 p-input-icon-left">
+                      <i class="pi pi-search"></i>
+                      <input
+                        pInputText
+                        type="text"
+                        placeholder="Buscar..."
+                        class="w-full sm:w-auto"
+                        (input)="onGlobalFilter(dt, $event)"
+                      />
+                    </span>
+                  </div>
+                </ng-template> -->
+                <ng-template pTemplate="header" let-columns>
+                  <tr>
+                    <ng-container *ngFor="let col of columns">
+                      <th class="text-center" [pSortableColumn]="col.field">
+                        <ng-container
+                          *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                        >
+                          {{ col.header }}
+                          <p-sortIcon [field]="col.field"></p-sortIcon>
+                        </ng-container>
+                        <ng-container
+                          *ngIf="col.field === 'n' || col.field === 'opciones'"
+                        >
+                          {{ col.header }}
+                        </ng-container>
+                      </th>
+                    </ng-container>
+                  </tr>
+                </ng-template>
+                <ng-template
+                  pTemplate="body"
+                  let-medidor
+                  let-rowIndex="rowIndex"
+                >
+                  <tr>
+                    <td class="text-center">{{ rowIndex + 1 }}</td>
+                    <td class="text-center">
+                      <p-chip
+                        [label]="
+                          transformRequestType(medidor.tipo_med).translation
+                        "
+                        [icon]="transformRequestType(medidor.tipo_med).icon"
+                      ></p-chip>
+                    </td>
+
+                    <td class="text-center">
+                      <p-tag
+                        [value]="
+                          medidor.estado ? 'Habilitado' : 'Deshabilitado'
+                        "
+                        [severity]="medidor.estado ? 'success' : 'danger'"
+                      ></p-tag>
+                    </td>
+                    <td class="text-center">
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-pencil"
+                        class="p-button-primary mx-1"
+                        (click)="modalModificarMedidor(medidor)"
+                      ></button>
+                      <button
+                        *ngIf="medidor.estado"
+                        pButton
+                        pRipple
+                        icon="pi pi-trash"
+                        class="p-button-danger mx-1"
+                        (click)="modalDeshabilitarMedidor(medidor)"
+                      ></button>
+                      <button
+                        *ngIf="!medidor.estado"
+                        pButton
+                        pRipple
+                        icon="pi pi-replay"
+                        class="p-button-warning mx-1"
+                        (click)="modalHabilitarMedidor(medidor)"
+                      ></button>
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-map-marker"
+                        class="p-button-help mx-1"
+                        (click)="modalVisualizarMedidor(medidor)"
+                      ></button>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage" let-columns>
+                  <tr>
+                    <td
+                      [attr.colspan]="columns.length"
+                      class="text-center p-text-center p-p-4"
+                    >
+                      <i
+                        class="pi pi-exclamation-triangle p-mr-2"
+                        style="font-size: 1rem"
+                      ></i>
+                      No hay datos disponibles
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<!-- Adicionar cliente -->
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar cliente"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label for="ci">Cedula de identidad</label>
+        <input
+          type="text"
+          pInputText
+          id="ci"
+          formControlName="ci"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('ci')?.invalid && (Add.get('ci')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('ci')?.invalid && (Add.get('ci')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('ci')?.hasError('required')">
+            El ci es requerido.
+          </span>
+          <span *ngIf="Add.get('ci')?.hasError('minlength')">
+            El ci debe tener al menos 6 caracteres.
+          </span>
+          <span *ngIf="Add.get('ci')?.hasError('maxlength')">
+            El ci no debe tener más de 10 caracteres.
+          </span>
+          <span *ngIf="Add.get('ci')?.hasError('ciExists')">
+            El ci ya existe.
+          </span>
+          <span class="block" *ngIf="Add.get('ci')?.hasError('pattern')">
+            El ci debe contener numeros o letras.
+          </span>
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input
+          type="text"
+          pInputText
+          id="nombre"
+          formControlName="nombre"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('nombre')?.invalid &&
+              (Add.get('nombre')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('nombre')?.invalid &&
+            (Add.get('nombre')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('nombre')?.hasError('required')">
+            El nombre es requerido.
+          </span>
+          <span *ngIf="Add.get('nombre')?.hasError('minlength')">
+            El nombre debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('nombre')?.hasError('maxlength')">
+            El nombre no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="ap">Apellido paterno</label>
+        <input
+          type="text"
+          pInputText
+          id="ap"
+          formControlName="ap"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('ap')?.invalid && (Add.get('ap')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('ap')?.invalid && (Add.get('ap')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('ap')?.hasError('required')">
+            El apellido paterno es requerido.
+          </span>
+          <span *ngIf="Add.get('ap')?.hasError('minlength')">
+            El apellido paterno debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('ap')?.hasError('maxlength')">
+            El apellido paterno no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="am">Apellido materno</label>
+        <input
+          type="text"
+          pInputText
+          id="am"
+          formControlName="am"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('am')?.invalid && (Add.get('am')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('am')?.invalid && (Add.get('am')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('am')?.hasError('minlength')">
+            El apellido materno debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('am')?.hasError('maxlength')">
+            El apellido materno no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="fecha_nacimiento">Fecha de nacimiento</label>
+        <p-calendar
+          formControlName="fecha_nacimiento"
+          appendTo="body"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('fecha_nacimiento')?.invalid &&
+              (Add.get('fecha_nacimiento')?.dirty || submittedAdd)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('fecha_nacimiento')?.invalid &&
+            (Add.get('fecha_nacimiento')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('fecha_nacimiento')?.hasError('required')">
+            La fecha de nacimiento es requerida.
+          </span>
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="telefono">Teléfono</label>
+        <input
+          type="text"
+          pInputText
+          id="telefono"
+          formControlName="telefono"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('telefono')?.invalid &&
+              (Add.get('telefono')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('telefono')?.invalid &&
+            (Add.get('telefono')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('telefono')?.hasError('required')">
+            El teléfono es requerido.
+          </span>
+          <span *ngIf="Add.get('telefono')?.hasError('pattern')">
+            El teléfono debe contener numeros.
+          </span>
+          <span *ngIf="Add.get('telefono')?.hasError('minlength')">
+            El teléfono debe tener al menos 8 caracteres.
+          </span>
+          <span *ngIf="Add.get('telefono')?.hasError('maxlength')">
+            El teléfono no debe tener más de 8 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Sexo</label>
+        <div class="flex flex-wrap gap-3">
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="sexo"
+              label="Masculino"
+              value="M"
+              formControlName="sexo"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Add.get('sexo')?.invalid &&
+                  (Add.get('sexo')?.dirty || submittedAdd)
+              }"
+            ></p-radioButton>
+          </div>
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="sexo"
+              label="Femenino"
+              value="F"
+              formControlName="sexo"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Add.get('sexo')?.invalid &&
+                  (Add.get('sexo')?.dirty || submittedAdd)
+              }"
+            ></p-radioButton>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('sexo')?.invalid && (Add.get('sexo')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('sexo')?.hasError('required')">
+            El sexo es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Estado civil</label>
+        <div class="flex flex-wrap gap-3">
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="estado_civil"
+              label="Soltero/a"
+              value="S"
+              formControlName="estado_civil"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Add.get('estado_civil')?.invalid &&
+                  (Add.get('estado_civil')?.dirty || submittedAdd)
+              }"
+            ></p-radioButton>
+          </div>
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="estado_civil"
+              label="Casado/a"
+              value="C"
+              formControlName="estado_civil"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Add.get('estado_civil')?.invalid &&
+                  (Add.get('estado_civil')?.dirty || submittedAdd)
+              }"
+            ></p-radioButton>
+          </div>
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="estado_civil"
+              label="Divorciado/a"
+              value="D"
+              formControlName="estado_civil"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Add.get('estado_civil')?.invalid &&
+                  (Add.get('estado_civil')?.dirty || submittedAdd)
+              }"
+            ></p-radioButton>
+          </div>
+        </div>
+
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('estado_civil')?.invalid &&
+            (Add.get('estado_civil')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('estado_civil')?.hasError('required')">
+            El estado civil es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="id_img">Imagen</label>
+        <p-fileUpload
+          name="file"
+          [customUpload]="true"
+          (onSelect)="handleUpload($event)"
+          [maxFileSize]="1000000"
+          accept="image/*"
+          [showUploadButton]="false"
+          chooseLabel="Seleccionar imagen"
+          cancelLabel="Cancelar"
+        ></p-fileUpload>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modificar cliente -->
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar cliente"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label for="ci">Cedula de identidad</label>
+        <input
+          type="text"
+          pInputText
+          id="ci"
+          formControlName="ci"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('ci')?.invalid && (Mod.get('ci')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('ci')?.invalid && (Mod.get('ci')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('ci')?.hasError('required')">
+            El ci es requerido.
+          </span>
+          <span *ngIf="Mod.get('ci')?.hasError('minlength')">
+            El ci debe tener al menos 6 caracteres.
+          </span>
+          <span *ngIf="Mod.get('ci')?.hasError('maxlength')">
+            El ci no debe tener más de 10 caracteres.
+          </span>
+          <span *ngIf="Mod.get('ci')?.hasError('ciExists')">
+            El ci ya existe.
+          </span>
+          <span class="block" *ngIf="Mod.get('ci')?.hasError('pattern')">
+            El ci debe contener numeros o letras.
+          </span>
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input
+          type="text"
+          pInputText
+          id="nombre"
+          formControlName="nombre"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('nombre')?.invalid &&
+              (Mod.get('nombre')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('nombre')?.invalid &&
+            (Mod.get('nombre')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('nombre')?.hasError('required')">
+            El nombre es requerido.
+          </span>
+          <span *ngIf="Mod.get('nombre')?.hasError('minlength')">
+            El nombre debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('nombre')?.hasError('maxlength')">
+            El nombre no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="ap">Apellido paterno</label>
+        <input
+          type="text"
+          pInputText
+          id="ap"
+          formControlName="ap"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('ap')?.invalid && (Mod.get('ap')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('ap')?.invalid && (Mod.get('ap')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('ap')?.hasError('required')">
+            El apellido paterno es requerido.
+          </span>
+          <span *ngIf="Mod.get('ap')?.hasError('minlength')">
+            El apellido paterno debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('ap')?.hasError('maxlength')">
+            El apellido paterno no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="am">Apellido materno</label>
+        <input
+          type="text"
+          pInputText
+          id="am"
+          formControlName="am"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('am')?.invalid && (Mod.get('am')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('am')?.invalid && (Mod.get('am')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('am')?.hasError('minlength')">
+            El apellido materno debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('am')?.hasError('maxlength')">
+            El apellido materno no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="fecha_nacimiento">Fecha de nacimiento</label>
+        <p-calendar
+          formControlName="fecha_nacimiento"
+          appendTo="body"
+          dateFormat="yy-mm-dd"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('fecha_nacimiento')?.invalid &&
+              (Mod.get('fecha_nacimiento')?.dirty || submittedMod)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('fecha_nacimiento')?.invalid &&
+            (Mod.get('fecha_nacimiento')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('fecha_nacimiento')?.hasError('required')">
+            La fecha de nacimiento es requerida.
+          </span>
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="telefono">Teléfono</label>
+        <input
+          type="text"
+          pInputText
+          id="telefono"
+          formControlName="telefono"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('telefono')?.invalid &&
+              (Mod.get('telefono')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('telefono')?.invalid &&
+            (Mod.get('telefono')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('telefono')?.hasError('required')">
+            El teléfono es requerido.
+          </span>
+          <span *ngIf="Mod.get('telefono')?.hasError('pattern')">
+            El teléfono debe contener numeros.
+          </span>
+          <span *ngIf="Mod.get('telefono')?.hasError('minlength')">
+            El teléfono debe tener al menos 8 caracteres.
+          </span>
+          <span *ngIf="Mod.get('telefono')?.hasError('maxlength')">
+            El teléfono no debe tener más de 8 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Sexo</label>
+        <div class="flex flex-wrap gap-3">
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="sexo"
+              label="Masculino"
+              value="M"
+              formControlName="sexo"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Mod.get('sexo')?.invalid &&
+                  (Mod.get('sexo')?.dirty || submittedMod)
+              }"
+            ></p-radioButton>
+          </div>
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="sexo"
+              label="Femenino"
+              value="F"
+              formControlName="sexo"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Mod.get('sexo')?.invalid &&
+                  (Mod.get('sexo')?.dirty || submittedMod)
+              }"
+            ></p-radioButton>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('sexo')?.invalid && (Mod.get('sexo')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('sexo')?.hasError('required')">
+            El sexo es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Estado civil</label>
+        <div class="flex flex-wrap gap-3">
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="estado_civil"
+              label="Soltero/a"
+              value="S"
+              formControlName="estado_civil"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Mod.get('estado_civil')?.invalid &&
+                  (Mod.get('estado_civil')?.dirty || submittedMod)
+              }"
+            ></p-radioButton>
+          </div>
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="estado_civil"
+              label="Casado/a"
+              value="C"
+              formControlName="estado_civil"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Mod.get('estado_civil')?.invalid &&
+                  (Mod.get('estado_civil')?.dirty || submittedMod)
+              }"
+            ></p-radioButton>
+          </div>
+          <div class="flex align-items-center">
+            <p-radioButton
+              name="estado_civil"
+              label="Divorciado/a"
+              value="D"
+              formControlName="estado_civil"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Mod.get('estado_civil')?.invalid &&
+                  (Mod.get('estado_civil')?.dirty || submittedMod)
+              }"
+            ></p-radioButton>
+          </div>
+        </div>
+
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('estado_civil')?.invalid &&
+            (Mod.get('estado_civil')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('estado_civil')?.hasError('required')">
+            El estado civil es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="id_img">Imagen</label>
+        <p-fileUpload
+          name="file"
+          [customUpload]="true"
+          (onSelect)="handleUpload($event)"
+          [maxFileSize]="1000000"
+          accept="image/*"
+          [showUploadButton]="false"
+          chooseLabel="Seleccionar imagen"
+          cancelLabel="Cancelar"
+        ></p-fileUpload>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Habilitar cliente -->
+<p-dialog
+  [(visible)]="modalEnable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas habilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Deshabilitar cliente -->
+<p-dialog
+  [(visible)]="modalDisable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas deshabilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Adicionar medidor -->
+<p-dialog
+  [(visible)]="modalAddM"
+  header="Adicionar medidor"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="AddM">
+      <div class="field">
+        <label>Tipo de medidor</label>
+        <p-dropdown
+          formControlName="tipo_med"
+          [options]="tipo_medidor"
+          optionLabel="nombre"
+          optionValue="tipo_med"
+          placeholder="Seleccionar tipo de medidor"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              AddM.get('tipo_med')?.invalid &&
+              (AddM.get('tipo_med')?.dirty || submittedAddM)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            AddM.get('tipo_med')?.invalid &&
+            (AddM.get('tipo_med')?.dirty || submittedAddM)
+          "
+        >
+          Debes seleccionar una ruta.
+        </small>
+      </div>
+      <div class="field">
+        <label for="map">Coordenadas</label>
+        <div class="map-container">
+          <div class="search-container">
+            <span class="p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <p-autoComplete
+                [suggestions]="lugares"
+                (completeMethod)="search($event)"
+                (onSelect)="seleccionarLugar($event)"
+                field="nombre"
+                placeholder="Buscar..."
+                class="p-inputtext-rounded"
+              ></p-autoComplete>
+            </span>
+          </div>
+          <div id="map"></div>
+          <div class="button-container">
+            <p-toggleButton
+              [onIcon]="'pi pi-times'"
+              [offIcon]="'pi pi-map'"
+              (click)="cambiarCapa()"
+            ></p-toggleButton>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            AddM.get('id_coor')?.invalid &&
+            (AddM.get('id_coor')?.dirty || submittedAddM)
+          "
+        >
+          Debes seleccionar la ubicación del medidor.
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="adicionarMedidor()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modificar medidor -->
+<p-dialog
+  [(visible)]="modalModM"
+  header="Modificar medidor"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="ModM">
+      <div class="field">
+        <label>Tipo de medidor</label>
+        <p-dropdown
+          formControlName="tipo_med"
+          [options]="tipo_medidor"
+          optionLabel="nombre"
+          optionValue="tipo_med"
+          placeholder="Seleccionar tipo de medidor"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              ModM.get('tipo_med')?.invalid &&
+              (ModM.get('tipo_med')?.dirty || submittedModM)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            ModM.get('tipo_med')?.invalid &&
+            (ModM.get('tipo_med')?.dirty || submittedModM)
+          "
+        >
+          Debes seleccionar un tipo de medidor.
+        </small>
+      </div>
+      <div class="field">
+        <label>Seleccionar lugar</label>
+        <div class="map-container">
+          <div class="search-container">
+            <span class="p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <p-autoComplete
+                [suggestions]="lugares"
+                (completeMethod)="search($event)"
+                (onSelect)="seleccionarLugar($event)"
+                field="nombre"
+                placeholder="Buscar..."
+                class="p-inputtext-rounded"
+              ></p-autoComplete>
+            </span>
+          </div>
+          <div id="map" [ngClass]="{ maximized: maximized }"></div>
+          <div class="button-container" [ngClass]="{ maximized: maximized }">
+            <p-button
+              icon="pi pi-map-marker"
+              styleClass="p-button-rounded"
+            ></p-button>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            ModM.get('id_coor')?.invalid &&
+            (ModM.get('id_coor')?.dirty || submittedModM)
+          "
+        >
+          Debes seleccionar la ubicación del medidor.
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="modificarMedidor()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Habilitar medidor -->
+<p-dialog
+  [(visible)]="modalEnableM"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas habilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitarMedidor()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Deshabilitar medidor -->
+<p-dialog
+  [(visible)]="modalDisableM"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas deshabilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitarMedidor()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Visualizar medidor -->
+<p-dialog
+  [(visible)]="modalView"
+  header="Visualizar medidor"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  [maximizable]="true"
+  (onShow)="mostrarMapa()"
+  (onMaximize)="resizeMap()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <div class="map-container-view">
+        <div id="map" [ngClass]="{ maximized: maximized }"></div>
+        <div class="button-container">
+          <p-toggleButton
+            [onIcon]="'pi pi-times'"
+            [offIcon]="'pi pi-map'"
+            (click)="cambiarCapa()"
+          ></p-toggleButton>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer"></ng-template>
+</p-dialog>

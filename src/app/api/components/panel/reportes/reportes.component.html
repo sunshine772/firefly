@@ -1,0 +1,122 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-tabView>
+        <p-tabPanel header="Reportes">
+          <div class="block">
+            <h5 class="m-0">Gestión de reportes</h5>
+          </div>
+          <!-- <div class="flex card-container overflow-hidden">
+            <div
+              class="w-8 flex align-items-center justify-content-center font-bold text-white m-2 px-5 py-3 border-round"
+            >
+              <ngx-extended-pdf-viewer
+                [src]="pdf"
+                [style.width]="'100%'"
+                [style.height]="'70vh'"
+                [useBrowserLocale]="true"
+                [textLayer]="true"
+                [showHandToolButton]="true"
+              ></ngx-extended-pdf-viewer>
+            </div>
+            <div
+              class="w-4 block align-items-center justify-content-center font-bold text-dark m-2 px-2 border-round"
+            >
+              <form [formGroup]="formGroup">
+                <p-panel header="Clientes" class="m-2 p-fluid">
+                  <p-autoComplete
+                    [suggestions]="clientes"
+                    [dropdown]="true"
+                  ></p-autoComplete>
+                </p-panel>
+                <p-panel header="Rango de fechas" class="m-2 p-fluid">
+                  <p-calendar
+                    class="w-auto"
+                    selectionMode="range"
+                    [readonlyInput]="true"
+                    appendTo="body"
+                    [showIcon]="true"
+                    dateFormat="yy-mm-dd"
+                  ></p-calendar>
+                </p-panel>
+                <p-panel header="Tags" class="m-2 p-fluid">
+                  <p-chips
+                    formControlName="values"
+                    [showClear]="true"
+                  ></p-chips>
+                </p-panel>
+
+                <div class="block font-bold text-center p-4 border-round mb-3">
+                  <button
+                    pButton
+                    type="submit"
+                    label="Generar reporte"
+                    class="p-button-lg"
+                  ></button>
+                </div>
+              </form>
+            </div>
+          </div> -->
+        </p-tabPanel>
+        <p-tabPanel header="Simulacion lecturaciones">
+          <form [formGroup]="Lec" (ngSubmit)="generarLecturaciones()">
+            <p-autoComplete
+              formControlName="rutas"
+              [dropdown]="true"
+              [suggestions]="filteredRutas"
+              field="nombre"
+              class="mr-4"
+              (completeMethod)="filter($event)"
+              appendTo="body"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Lec.get('rutas')?.invalid &&
+                  (Lec.get('rutas')?.dirty || submittedLec)
+              }"
+            ></p-autoComplete>
+            <!-- <small
+              class="p-error"
+              *ngIf="
+                Lec.get('rutas')?.invalid &&
+                (Lec.get('rutas')?.dirty || submittedLec)
+              "
+            >
+              La ruta es requerida.
+            </small> -->
+
+            <p-calendar
+              formControlName="fecha"
+              [showIcon]="true"
+              [readonlyInput]="true"
+              view="month"
+              dateFormat="yy-mm-dd"
+              class="mr-4"
+              [ngClass]="{
+                'ng-invalid ng-dirty ng-touch':
+                  Lec.get('fecha')?.invalid &&
+                  (Lec.get('fecha')?.dirty || submittedLec)
+              }"
+            ></p-calendar>
+            <!-- <small
+              class="p-error"
+              *ngIf="
+                Lec.get('fecha')?.invalid &&
+                (Lec.get('fecha')?.dirty || submittedLec)
+              "
+            >
+              La fecha es requerida.
+            </small> -->
+
+            <p-button
+              type="submit"
+              class="mr-4"
+              label="Generar lecturaciones"
+            ></p-button>
+          </form>
+        </p-tabPanel>
+      </p-tabView>
+    </div>
+  </div>
+</div>

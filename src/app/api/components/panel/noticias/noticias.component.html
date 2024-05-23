@@ -1,0 +1,427 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="noticias"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_not"
+        [columns]="cols"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de noticias</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-noticia let-rowIndex="rowIndex">
+          <tr>
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">
+              <p-image
+                *ngIf="noticia.imagenes"
+                [src]="getImagenUrl(noticia.imagenes.imagen)"
+                alt="Image"
+                width="50"
+                height="50"
+                [preview]="true"
+              ></p-image>
+              <p-image
+                *ngIf="!noticia.imagenes"
+                alt="Image"
+                width="50"
+                height="50"
+                [preview]="true"
+              ></p-image>
+            </td>
+
+            <td class="text-center">{{ noticia.titulo }}</td>
+            <td class="text-center">
+              {{ noticia.fecha | publicado : noticia.hora }}
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="noticia.estado ? 'Habilitado' : 'Deshabilitado'"
+                [severity]="noticia.estado ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(noticia)"
+              ></button>
+              <button
+                *ngIf="noticia.estado"
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-danger mx-1"
+                (click)="modalDeshabilitar(noticia)"
+              ></button>
+              <button
+                *ngIf="!noticia.estado"
+                pButton
+                pRipple
+                icon="pi pi-replay"
+                class="p-button-secondary mx-1"
+                (click)="modalHabilitar(noticia)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label for="titulo">Título</label>
+        <input
+          type="text"
+          pInputText
+          id="titulo"
+          formControlName="titulo"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('titulo')?.invalid &&
+              (Add.get('titulo')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('titulo')?.invalid &&
+            (Add.get('titulo')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('titulo')?.hasError('required')">
+            El titulo es requerido.
+          </span>
+          <span *ngIf="Add.get('titulo')?.hasError('minlength')">
+            El titulo debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('titulo')?.hasError('maxlength')">
+            El titulo no debe tener más de 100 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="descripcion">Descripcion</label>
+        <textarea
+          rows="5"
+          cols="30"
+          pInputTextarea
+          formControlName="descripcion"
+          [autoResize]="true"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('descripcion')?.invalid &&
+              (Add.get('descripcion')?.dirty || submittedAdd)
+          }"
+        ></textarea>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('descripcion')?.invalid &&
+            (Add.get('descripcion')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('descripcion')?.hasError('minlength')">
+            La descripcion debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('descripcion')?.hasError('maxlength')">
+            La descripcion no debe tener más de 500 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="imagen">Imagen</label>
+        <p-fileUpload
+          name="file"
+          [customUpload]="true"
+          (onSelect)="handleUpload($event)"
+          [maxFileSize]="1000000"
+          accept="image/*"
+          [showUploadButton]="false"
+          chooseLabel="Seleccionar imagen"
+          cancelLabel="Cancelar"
+        ></p-fileUpload>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label for="titulo">Título</label>
+        <input
+          type="text"
+          pInputText
+          id="titulo"
+          formControlName="titulo"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('titulo')?.invalid &&
+              (Mod.get('titulo')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('titulo')?.invalid &&
+            (Mod.get('titulo')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('titulo')?.hasError('required')">
+            El titulo es requerido.
+          </span>
+          <span *ngIf="Mod.get('titulo')?.hasError('minlength')">
+            El titulo debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('titulo')?.hasError('maxlength')">
+            El titulo no debe tener más de 100 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="descripcion">Descripcion</label>
+        <textarea
+          rows="5"
+          cols="30"
+          pInputTextarea
+          formControlName="descripcion"
+          [autoResize]="true"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('descripcion')?.invalid &&
+              (Mod.get('descripcion')?.dirty || submittedMod)
+          }"
+        ></textarea>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('descripcion')?.invalid &&
+            (Mod.get('descripcion')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('descripcion')?.hasError('minlength')">
+            La descripcion debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('descripcion')?.hasError('maxlength')">
+            La descripcion no debe tener más de 500 caracteres.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="imagen">Imagen</label>
+        <p-fileUpload
+          name="id_img"
+          [customUpload]="true"
+          (onSelect)="handleUpload($event)"
+          [maxFileSize]="1000000"
+          accept="image/*"
+          [showUploadButton]="false"
+          chooseLabel="Seleccionar imagen"
+          cancelLabel="Cancelar"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch': Mod.get('id_img')?.invalid
+          }"
+        ></p-fileUpload>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_img')?.invalid &&
+            (Mod.get('id_img')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('id_img')?.hasError('required')">
+            La imagen es requerida
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas publicar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas deshabilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>

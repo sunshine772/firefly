@@ -1,0 +1,621 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="rutas"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_rut"
+        [columns]="cols"
+        rowExpandMode="single"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de rutas</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template
+          pTemplate="body"
+          let-ruta
+          let-rowData
+          let-rowIndex="rowIndex"
+          let-expanded="expanded"
+        >
+          <tr>
+            <!-- <td>
+              <button
+                pButton
+                pRipple
+                [pRowToggler]="ruta"
+                class="p-button-text p-button-rounded p-button-plain"
+                [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                (click)="listarMedidores(ruta.id_rut)"
+              ></button>
+            </td> -->
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">{{ ruta.nombre }}</td>
+            <td class="text-center">{{ ruta.lugares.nombre }}</td>
+            <td class="text-center">
+              <p-tag
+                [value]="ruta.estado ? 'Habilitado' : 'Deshabilitado'"
+                [severity]="ruta.estado ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(ruta)"
+              ></button>
+              <button
+                *ngIf="ruta.estado"
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-danger mx-1"
+                (click)="modalDeshabilitar(ruta)"
+              ></button>
+              <button
+                *ngIf="!ruta.estado"
+                pButton
+                pRipple
+                icon="pi pi-replay"
+                class="p-button-secondary mx-1"
+                (click)="modalHabilitar(ruta)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus-circle"
+                class="p-button-warning mx-1"
+                (click)="modalAdicionarMedidor(ruta)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-map-marker"
+                class="p-button-help mx-1"
+                (click)="modalVisualizarRuta(ruta)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="rowexpansion" let-actividad>
+          <tr>
+            <td [attr.colspan]="cols.length">
+              <p-table
+                #dt
+                [value]="medidores"
+                responsiveLayout="scroll"
+                [rows]="5"
+                [globalFilterFields]="colsMedidores"
+                [rowsPerPageOptions]="[5, 10, 15]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+                selectionMode="multiple"
+                [rowHover]="true"
+                dataKey="id_med"
+                [columns]="colsMedidores"
+              >
+                <ng-template pTemplate="header" let-columns>
+                  <tr>
+                    <ng-container *ngFor="let col of columns">
+                      <th class="text-center" [pSortableColumn]="col.field">
+                        <ng-container
+                          *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                        >
+                          {{ col.header }}
+                          <p-sortIcon [field]="col.field"></p-sortIcon>
+                        </ng-container>
+                        <ng-container
+                          *ngIf="col.field === 'n' || col.field === 'opciones'"
+                        >
+                          {{ col.header }}
+                        </ng-container>
+                      </th>
+                    </ng-container>
+                  </tr>
+                </ng-template>
+                <ng-template
+                  pTemplate="body"
+                  let-medidor
+                  let-rowIndex="rowIndex"
+                >
+                  <tr>
+                    <td class="text-center">{{ rowIndex + 1 }}</td>
+                    <td class="text-center">
+                      <p-chip
+                        [label]="
+                          transformRequestType(medidor.tipo_med).translation
+                        "
+                        [icon]="transformRequestType(medidor.tipo_med).icon"
+                      ></p-chip>
+                    </td>
+
+                    <td class="text-center">
+                      <p-tag
+                        [value]="
+                          medidor.estado ? 'Habilitado' : 'Deshabilitado'
+                        "
+                        [severity]="medidor.estado ? 'success' : 'danger'"
+                      ></p-tag>
+                    </td>
+                    <td class="text-center">
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-trash"
+                        class="p-button-danger mx-1"
+                        (click)="eliminarMedidor(ruta)"
+                      ></button>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage" let-columns>
+                  <tr>
+                    <td
+                      [attr.colspan]="columns.length"
+                      class="text-center p-text-center p-p-4"
+                    >
+                      <i
+                        class="pi pi-exclamation-triangle p-mr-2"
+                        style="font-size: 1rem"
+                      ></i>
+                      No hay datos disponibles
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          formControlName="id_lug"
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          emptyMessage="No se encontraron lugares"
+          appendTo="body"
+          placeholder="Seleccionar lugar"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('id_lug')?.invalid &&
+              (Add.get('id_lug')?.dirty || submittedAdd)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('id_lug')?.invalid &&
+            (Add.get('id_lug')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('id_lug')?.hasError('required')">
+            El lugar es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input
+          type="text"
+          pInputText
+          id="nombre"
+          formControlName="nombre"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('nombre')?.invalid &&
+              (Add.get('nombre')?.dirty || submittedAdd)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('nombre')?.invalid &&
+            (Add.get('nombre')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('nombre')?.hasError('required')">
+            El nombre es requerido.
+          </span>
+          <span *ngIf="Add.get('nombre')?.hasError('minlength')">
+            El nombre debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Add.get('nombre')?.hasError('maxlength')">
+            El nombre no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          formControlName="id_lug"
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          emptyMessage="No se encontraron lugares"
+          appendTo="body"
+          placeholder="Seleccionar lugar"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('id_lug')?.invalid &&
+              (Mod.get('id_lug')?.dirty || submittedMod)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_lug')?.invalid &&
+            (Mod.get('id_lug')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('id_lug')?.hasError('required')">
+            El lugar es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label for="nombre">Nombre</label>
+        <input
+          type="text"
+          pInputText
+          id="nombre"
+          formControlName="nombre"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('nombre')?.invalid &&
+              (Mod.get('nombre')?.dirty || submittedMod)
+          }"
+        />
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('nombre')?.invalid &&
+            (Mod.get('nombre')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('nombre')?.hasError('required')">
+            El nombre es requerido.
+          </span>
+          <span *ngIf="Mod.get('nombre')?.hasError('minlength')">
+            El nombre debe tener al menos 3 caracteres.
+          </span>
+          <span *ngIf="Mod.get('nombre')?.hasError('maxlength')">
+            El nombre no debe tener más de 50 caracteres.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas habilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas deshabilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalAddM"
+  [style]="{ width: '60vw' }"
+  header="Adicionar medidor"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form>
+      <p-pickList
+        [source]="medidoresNuevos"
+        [target]="medidores"
+        sourceHeader="Medidores nuevos"
+        targetHeader="Medidores adicionados"
+        [dragdrop]="true"
+        [responsive]="true"
+        [sourceStyle]="{ height: '40rem' }"
+        [targetStyle]="{ height: '40rem' }"
+        [showSourceControls]="false"
+        [showTargetControls]="false"
+        (onMoveToTarget)="adicionarMedidor($event)"
+        (onMoveToSource)="eliminarMedidor($event)"
+      >
+        <ng-template let-medidor pTemplate="item">
+          <div
+            class="flex flex-wrap p-2 align-items-center gap-3"
+            (click)="modalVisualizarMedidor(medidor)"
+          >
+            <img
+              *ngIf="medidor.clientes.personas.imagenes"
+              class="w-4rem shadow-2 flex-shrink-0 border-round"
+              [src]="getImagenUrl(medidor.clientes.personas.imagenes.imagen)"
+            />
+            <img
+              *ngIf="!medidor.clientes.personas.imagenes"
+              src="../../../../../assets/demo/images/avatar/imagen.png"
+              class="w-4rem shadow-2 flex-shrink-0 border-round"
+            />
+            <div class="flex-1 flex flex-column gap-2">
+              <span class="font-bold"
+                >{{ medidor.clientes.personas.nombre }}
+                {{ medidor.clientes.personas.ap }}
+                {{ medidor.clientes.personas.am }}</span
+              >
+              <div class="flex align-items-center gap-2">
+                <span>
+                  <p-chip
+                    [label]="transformRequestType(medidor.tipo_med).translation"
+                    [icon]="transformRequestType(medidor.tipo_med).icon"
+                  ></p-chip>
+                </span>
+              </div>
+            </div>
+            <!-- <button
+              pButton
+              pRipple
+              icon="pi pi-map-marker"
+              class="p-button-help mx-1"
+            ></button> -->
+          </div>
+        </ng-template>
+      </p-pickList>
+    </form>
+  </ng-template>
+
+  <!-- <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+    ></button>
+  </ng-template> -->
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalView"
+  header="Visualizar ruta"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  [maximizable]="true"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <div class="map-container-view">
+        <div id="map"></div>
+        <div class="button-container">
+          <p-toggleButton
+            [onIcon]="'pi pi-times'"
+            [offIcon]="'pi pi-map'"
+            (click)="cambiarCapa()"
+          ></p-toggleButton>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer"></ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalViewM"
+  header="Visualizar medidor"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  [maximizable]="true"
+  (onShow)="mostrarMapaMedidor()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <div class="map-container-view">
+        <div id="map"></div>
+        <div class="button-container">
+          <p-toggleButton
+            [onIcon]="'pi pi-times'"
+            [offIcon]="'pi pi-map'"
+            (click)="cambiarCapaMedidor()"
+          ></p-toggleButton>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer"></ng-template>
+</p-dialog>

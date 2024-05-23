@@ -1,0 +1,445 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast></p-toast>
+
+      <p-treeTable
+        #dt
+        [value]="responsables"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        dataKey="id_not"
+        [columns]="cols"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de subordinados</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <th style="width: 1rem"></th>
+
+            <th
+              class="text-center"
+              *ngFor="let col of columns"
+              [ttSortableColumn]="col.field"
+            >
+              {{ col.header }}
+              <p-treeTableSortIcon [field]="col.field"></p-treeTableSortIcon>
+            </th>
+            <th class="text-center">Opciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+          <tr
+            [ngClass]="{
+              'row-expanded': rowNode.node.expanded
+            }"
+          >
+            <td>
+              <p-treeTableToggler [rowNode]="rowNode"></p-treeTableToggler>
+            </td>
+            <!-- <td class="text-center">
+              <img
+                [src]="getImagenUrl(rowData.empleados.personas.imagenes.imagen)"
+                [alt]="rowData.empleados.personas.imagenes.nombre"
+                width="100"
+                class="shadow-4"
+              />
+            </td> -->
+            <td class="text-center">
+              {{ rowData.empleados.personas.nombre }}
+              {{ rowData.empleados.personas.ap }}
+              {{ rowData.empleados.personas.am }}
+            </td>
+            <td class="text-center">{{ rowData.empleados.cargos.nombre }}</td>
+            <td class="text-center">
+              {{ rowData.empleados.cargos.areas.nombre }}
+            </td>
+            <td class="text-center">
+              <ng-container *ngIf="!rowNode.node.parent">
+                <p-tag
+                  [value]="rowData.estado ? 'Habilitado' : 'Deshabilitado'"
+                  [severity]="rowData.estado ? 'success' : 'danger'"
+                ></p-tag>
+              </ng-container>
+            </td>
+            <td class="text-center">
+              <ng-container
+                *ngIf="rowNode.node.parent; else responsableButtons"
+              >
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-trash"
+                  class="p-button-danger mx-1"
+                  (click)="modalEliminar(rowData)"
+                ></button>
+              </ng-container>
+              <ng-template #responsableButtons>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-pencil"
+                  class="p-button-primary mx-1"
+                  (click)="modalModificar(rowData)"
+                ></button>
+                <button
+                  *ngIf="rowData.estado"
+                  pButton
+                  pRipple
+                  icon="pi pi-trash"
+                  class="p-button-secondary mx-1"
+                  (click)="modalDeshabilitar(rowData)"
+                ></button>
+                <button
+                  *ngIf="!rowData.estado"
+                  pButton
+                  pRipple
+                  icon="pi pi-replay"
+                  class="p-button-secondary mx-1"
+                  (click)="modalHabilitar(rowData)"
+                ></button>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-plus-circle"
+                  class="p-button-warning mx-1"
+                  (click)="modalAsignar(rowData)"
+                ></button>
+              </ng-template>
+            </td>
+          </tr>
+        </ng-template>
+      </p-treeTable>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  [style]="{ width: '450px' }"
+  header="Adicionar responsable"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label for="fecha">Seleccionar empleado</label>
+        <!-- <p-autoComplete
+          formControlName="ci"
+          [suggestions]="empleados"
+          (completeMethod)="search($event)"
+          field="fullName"
+          appendTo="body"
+          placeholder="Buscar..."
+          [type]="'search'"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('ci')?.value ||
+              (Add.get('ci')?.invalid && (Add.get('ci')?.dirty || submittedAdd))
+          }"
+        >
+          <ng-template let-empleado pTemplate="item">
+            <div>
+              {{ empleado.personas.nombre }}
+              {{ empleado.personas.ap }}
+              {{ empleado.personas.am }}
+            </div>
+          </ng-template>
+        </p-autoComplete> -->
+        <p-dropdown
+          [options]="empleados"
+          formControlName="ci"
+          optionLabel="nombreCompleto"
+          optionValue="ci"
+          emptyMessage="No se encontraron empleados"
+          placeholder="Seleccionar"
+          appendTo="body"
+          [filter]="true"
+          filterBy="ci"
+          [showClear]="true"
+          filterPlaceholder="Buscar con el CI"
+          emptyFilterMessage="No se encontraron empleados"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('ci')?.value ||
+              (Add.get('ci')?.invalid && (Add.get('ci')?.dirty || submittedAdd))
+          }"
+        >
+          <ng-template let-empleado pTemplate="item">
+            <div class="flex align-items-center gap-2">
+              <div>{{ empleado.personas.nombre }}</div>
+              <div>{{ empleado.personas.ap }}</div>
+              <div>{{ empleado.personas.am }}</div>
+            </div>
+          </ng-template>
+        </p-dropdown>
+
+        <small
+          class="block p-error"
+          *ngIf="
+            Add.get('ci')?.invalid &&
+            (Add.get('ci')?.dirty || submittedAdd) &&
+            !Add.get('ci')?.value
+          "
+        >
+          El empleado debe ser seleccionado.
+        </small>
+      </div>
+      <div class="field">
+        <label for="inicio">Inicio</label>
+        <p-calendar
+          formControlName="inicio"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('inicio')?.invalid &&
+              (Add.get('inicio')?.dirty || submittedAdd)
+          }"
+        ></p-calendar>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('inicio')?.invalid &&
+            (Add.get('inicio')?.dirty || submittedAdd)
+          "
+        >
+          La fecha de inicio es requerida.
+        </small>
+      </div>
+      <div class="field">
+        <label for="fin">Fin</label>
+        <p-calendar formControlName="fin" appendTo="body"></p-calendar>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  [style]="{ width: '450px' }"
+  header="Modificar"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label for="fecha">Seleccionar empleado</label>
+        <p-autoComplete
+          formControlName="ci"
+          field="name"
+          placeholder="Buscar..."
+        ></p-autoComplete>
+      </div>
+      <div class="field">
+        <label for="fecha">Inicio</label>
+        <p-calendar formControlName="inicio"></p-calendar>
+      </div>
+      <div class="field">
+        <label for="hora">Fin</label>
+        <p-calendar formControlName="fin"></p-calendar>
+      </div>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas habilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas deshabilitar <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalAsi"
+  [style]="{ width: '450px' }"
+  header="Asignar subordinado"
+  [modal]="true"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <label for="fecha">Seleccionar empleado</label>
+      <p-autoComplete
+        formControlName="selectedCountry"
+        field="name"
+        placeholder="Buscar..."
+      ></p-autoComplete>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="eliminar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEli"
+  header="Eliminar subordinado"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas eliminar a <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="eliminar()"
+    ></button>
+  </ng-template>
+</p-dialog>

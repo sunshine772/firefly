@@ -1,0 +1,552 @@
+<!-- <div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table #dt [value]="postes">
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de postes</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <p-autoComplete
+                [suggestions]="lugares"
+                (completeMethod)="search($event)"
+                (onSelect)="seleccionarLugar($event)"
+                field="nombre"
+                placeholder="Buscar..."
+                appendTo="body"
+                [type]="'search'"
+              ></p-autoComplete>
+            </span>
+            <div class="p-toolbar-group-end">
+              <p-button
+                icon="pi pi-replay"
+                (click)="modalEliminar()"
+                styleClass="p-button-danger"
+              ></p-button>
+            </div>
+          </div>
+        </ng-template>
+      </p-table>
+      <div class="map-container">
+        <div class="search-container"></div>
+        <div #map id="map"></div>
+        <div class="button-container">
+          <p-toggleButton
+            [onIcon]="'pi pi-times'"
+            [offIcon]="'pi pi-map'"
+            (click)="cambiarCapa()"
+          ></p-toggleButton>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6 py-6">
+      <p-toast position="bottom-right"></p-toast>
+
+      <p-table
+        #dt
+        [value]="postes"
+        responsiveLayout="scroll"
+        [rows]="5"
+        [globalFilterFields]="cols"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+        selectionMode="multiple"
+        [rowHover]="true"
+        dataKey="id_pos"
+        [columns]="cols"
+      >
+        <ng-template pTemplate="caption">
+          <div
+            class="flex flex-column md:flex-row md:justify-content-between md:align-items-center"
+          >
+            <h5 class="m-0">Gestión de postes</h5>
+            <span class="block mt-2 md:mt-0 p-input-icon-left">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar..."
+                class="w-full sm:w-auto"
+                (input)="onGlobalFilter(dt, $event)"
+              />
+              <button
+                pButton
+                pRipple
+                icon="pi pi-plus"
+                class="p-button-success mx-3"
+                (click)="modalAdicionar()"
+              ></button>
+            </span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <th class="text-center" [pSortableColumn]="col.field">
+                <ng-container
+                  *ngIf="col.field !== 'n' && col.field !== 'opciones'"
+                >
+                  {{ col.header }}
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </ng-container>
+                <ng-container
+                  *ngIf="col.field === 'n' || col.field === 'opciones'"
+                >
+                  {{ col.header }}
+                </ng-container>
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-poste let-rowIndex="rowIndex">
+          <tr>
+            <td class="text-center">{{ rowIndex + 1 }}</td>
+            <td class="text-center">
+              <p-chip
+                [label]="transformRequestType(poste.tipo_pos).translation"
+                [icon]="transformRequestType(poste.tipo_pos).icon"
+              ></p-chip>
+            </td>
+            <!-- <td class="text-center">{{ poste.descripcion }}</td> -->
+            <td class="text-center">
+              <p-tag
+                [value]="poste.estado ? 'Habilitado' : 'Deshabilitado'"
+                [severity]="poste.estado ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+            <td class="text-center">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-primary mx-1"
+                (click)="modalModificar(poste)"
+              ></button>
+              <button
+                *ngIf="poste.estado"
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-danger mx-1"
+                (click)="modalDeshabilitar(poste)"
+              ></button>
+              <button
+                *ngIf="!poste.estado"
+                pButton
+                pRipple
+                icon="pi pi-replay"
+                class="p-button-secondary mx-1"
+                (click)="modalHabilitar(poste)"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-map-marker"
+                class="p-button-help mx-1"
+                (click)="modalVisualizar(poste)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage" let-columns>
+          <tr>
+            <td
+              [attr.colspan]="columns.length"
+              class="text-center p-text-center p-p-4"
+            >
+              <i
+                class="pi pi-exclamation-triangle p-mr-2"
+                style="font-size: 1rem"
+              ></i>
+              No hay datos disponibles
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="modalAdd"
+  header="Adicionar poste"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Add">
+      <div class="field">
+        <label>Tipo de poste</label>
+        <p-dropdown
+          formControlName="tipo_pos"
+          [options]="tipo_poste"
+          optionLabel="nombre"
+          optionValue="tipo_pos"
+          placeholder="Seleccionar tipo de poste"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('tipo_pos')?.invalid &&
+              (Add.get('tipo_pos')?.dirty || submittedAdd)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('tipo_pos')?.invalid &&
+            (Add.get('tipo_pos')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('tipo_pos')?.hasError('required')">
+            El tipo de poste es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Municipios</label>
+        <p-dropdown
+          formControlName="id_mu"
+          [options]="municipios"
+          optionLabel="nombre"
+          optionValue="id_mu"
+          emptyMessage="No se encontraron municipios"
+          (onChange)="seleccionarMunicipio($event.value)"
+          appendTo="body"
+          placeholder="Seleccionar municipio"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Add.get('id_mu')?.invalid &&
+              (Add.get('id_mu')?.dirty || submittedAdd)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('id_mu')?.invalid &&
+            (Add.get('id_mu')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('id_mu')?.hasError('required')">
+            El municipio es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          emptyMessage="No se encontraron lugares"
+          (onChange)="seleccionarLugar($event.value)"
+          appendTo="body"
+          placeholder="Seleccionar lugar"
+        ></p-dropdown>
+      </div>
+      <div class="field">
+        <label for="map">Ubicacion</label>
+        <div class="map-container">
+          <div id="map"></div>
+          <div class="button-container">
+            <p-toggleButton
+              [onIcon]="'pi pi-times'"
+              [offIcon]="'pi pi-map'"
+              (click)="cambiarCapa()"
+            ></p-toggleButton>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            Add.get('id_coor')?.invalid &&
+            (Add.get('id_coor')?.dirty || submittedAdd)
+          "
+        >
+          <span *ngIf="Add.get('id_coor')?.hasError('required')">
+            Las coordenadas son requeridas.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalAdd = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="adicionar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalMod"
+  header="Modificar poste"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="Mod">
+      <div class="field">
+        <label>Tipo de poste</label>
+        <p-dropdown
+          formControlName="tipo_pos"
+          [options]="tipo_poste"
+          optionLabel="nombre"
+          optionValue="tipo_pos"
+          placeholder="Seleccionar tipo de poste"
+          appendTo="body"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('tipo_pos')?.invalid &&
+              (Mod.get('tipo_pos')?.dirty || submittedMod)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('tipo_pos')?.invalid &&
+            (Mod.get('tipo_pos')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('tipo_pos')?.hasError('required')">
+            El tipo de poste es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Municipios</label>
+        <p-dropdown
+          formControlName="id_mu"
+          [options]="municipios"
+          optionLabel="nombre"
+          optionValue="id_mu"
+          emptyMessage="No se encontraron municipios"
+          (onChange)="seleccionarMunicipio($event.value)"
+          appendTo="body"
+          placeholder="Seleccionar municipio"
+          [ngClass]="{
+            'ng-invalid ng-dirty ng-touch':
+              Mod.get('id_mu')?.invalid &&
+              (Mod.get('id_mu')?.dirty || submittedMod)
+          }"
+        ></p-dropdown>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_mu')?.invalid &&
+            (Mod.get('id_mu')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('id_mu')?.hasError('required')">
+            El municipio es requerido.
+          </span>
+        </small>
+      </div>
+      <div class="field">
+        <label>Lugares</label>
+        <p-dropdown
+          [options]="lugares"
+          optionLabel="nombre"
+          optionValue="id_lug"
+          emptyMessage="No se encontraron lugares"
+          (onChange)="seleccionarLugar($event.value)"
+          appendTo="body"
+          placeholder="Seleccionar lugar"
+        ></p-dropdown>
+      </div>
+      <div class="field">
+        <label for="map">Ubicacion</label>
+        <div class="map-container">
+          <div id="map"></div>
+          <div class="button-container">
+            <p-toggleButton
+              [onIcon]="'pi pi-times'"
+              [offIcon]="'pi pi-map'"
+              (click)="cambiarCapa()"
+            ></p-toggleButton>
+          </div>
+        </div>
+        <small
+          class="p-error"
+          *ngIf="
+            Mod.get('id_coor')?.invalid &&
+            (Mod.get('id_coor')?.dirty || submittedMod)
+          "
+        >
+          <span *ngIf="Mod.get('id_coor')?.hasError('required')">
+            Las coordenadas son requeridas.
+          </span>
+        </small>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Cancelar"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="modalMod = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Guardar"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="modificar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalEnable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas habilitar el poste <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalEnable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="habilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDisable"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span
+      >¿Estás seguro de que deseas deshabilitar el poste
+      <b>{{ itemSelected }}</b
+      >?</span
+    >
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="deshabilitar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalDel"
+  header="Confirmar"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="flex align-items-center justify-content-center">
+    <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+    <span>¿Estás seguro de que deseas eliminar el ultimo poste añadido?</span>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      icon="pi pi-times"
+      class="p-button-text"
+      label="Cancelar"
+      (click)="modalDisable = false"
+    ></button>
+    <button
+      pButton
+      pRipple
+      icon="pi pi-check"
+      class="p-button-text"
+      label="Guardar"
+      (click)="eliminar()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="modalView"
+  header="Visualizar poste"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  [maximizable]="true"
+  (onShow)="mostrarMapa()"
+  class="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <div class="map-container-view">
+        <div id="map"></div>
+        <div class="button-container">
+          <p-toggleButton
+            [onIcon]="'pi pi-times'"
+            [offIcon]="'pi pi-map'"
+            (click)="cambiarCapa()"
+          ></p-toggleButton>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer"></ng-template>
+</p-dialog>
